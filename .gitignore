@@ -8,3 +8,5 @@
 out
 gen
 
+__pycache__
+data
