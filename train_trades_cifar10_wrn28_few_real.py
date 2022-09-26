@@ -69,6 +69,13 @@ def eval_adv_test_whitebox(model, device, test_loader):
     print('robust_acc_total: ', (10000-robust_err_total)/100)
     return ((10000-natural_err_total)/100).item(), ((10000-robust_err_total)/100).item()
 
+class TensorDatasetLabelInt(torch.utils.data.TensorDataset):
+    def __init__(self, image, label):
+        super().__init__(image,label)
+    def __getitem__(self,index):
+        item = tuple((tensor[index]) for tensor in self.tensors)
+        return (item[0], int(item[1]))
+
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
@@ -134,17 +141,19 @@ if args.eps_score != "all":
     # train_sampler = SubsetRandomSampler(idx)
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
     trainset_part = torch.utils.data.Subset(trainset,idx)
+    # print(trainset_part)
 
     synth_images = torch.load("./synth_images_12k.pt")
     synth_labels = torch.load("./synth_labels_12k.pt")
     
-    synth_dataset = torch.utils.data.TensorDataset(synth_images,synth_labels)
+    # synth_dataset = torch.utils.data.TensorDataset(synth_images,synth_labels)
+    synth_dataset = TensorDatasetLabelInt(synth_images,synth_labels)
 
-    merged_dataset = torch.utils.data.ConcatDataset([trainset_part,synth_dataset])
+    merged_dataset = torch.utils.data.ConcatDataset([synth_dataset,trainset_part])
 
     train_loader = torch.utils.data.DataLoader(merged_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
     print(f"!!!EPS {args.eps_score} is applied!!!")
-    num_data = len(idx)
+    num_data = len(train_loader.dataset)
 else:
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, **kwargs)
