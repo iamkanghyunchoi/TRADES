@@ -13,3 +13,4 @@ data
 out*
 model-*
 *.pkl
+*.pt

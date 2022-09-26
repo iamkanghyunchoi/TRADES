@@ -96,18 +96,21 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
+parser.add_argument('--model-dir', default='./model-cifar-wideResNet-3k',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
 # parser.add_argument('--use-real', action='store_true')
 parser.add_argument('--eps_score', type=str, default="all", choices=['all', 'high', 'mid', 'low'],
 	help="Attack to run Evaluation on")
+parser.add_argument('--scratch', action="store_true")
 
 args = parser.parse_args()
 
 # settings
 model_dir = args.model_dir
+if args.scratch:
+    model_dir = model_dir+"-scratch"
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
 use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -231,8 +234,10 @@ def adjust_learning_rate(optimizer, epoch):
 def main():
     # init model, ResNet18() can be also used here for training
     # model = WideResNet().to(device)
-    # model = get_model("wrn28_10_cifar10", pretrained=True).cuda()
-    model = get_model("wrn28_10_cifar10", pretrained=False).cuda()
+    if args.scratch:
+        model = get_model("wrn28_10_cifar10", pretrained=False).cuda()
+    else:
+        model = get_model("wrn28_10_cifar10", pretrained=True).cuda()
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
     for epoch in range(1, args.epochs + 1):
@@ -260,9 +265,9 @@ def main():
             # save checkpoint
             # if epoch % args.save_freq == 0:
             torch.save(model.state_dict(),
-                    os.path.join(model_dir, 'model-wrn28-best-eps-{}.pt'.format( args.eps_score)))
+                    os.path.join(model_dir, 'model-wrn28-best-eps-{}-3k.pt'.format( args.eps_score)))
             torch.save(optimizer.state_dict(),
-                    os.path.join(model_dir, 'opt-wrn28-checkpoint_best-eps-{}.tar'.format( args.eps_score)))
+                    os.path.join(model_dir, 'opt-wrn28-checkpoint_best-eps-{}-3k.tar'.format( args.eps_score)))
 
         print(f"robust best: {robust_best}")
         print(f"natural at robust best: {natural_best}")
