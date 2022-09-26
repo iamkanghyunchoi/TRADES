@@ -126,12 +126,20 @@ transform_test = transforms.Compose([
 ])
 
 if args.eps_score != "all":
-    with open(f"{args.eps_score}_eps_idx.pkl", 'rb') as f:
+    with open(f"{args.eps_score}_eps_3k_idx.pkl", 'rb') as f:
         idx = pickle.load(f)
     # train_sampler = SubsetRandomSampler(idx)
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
     trainset_part = torch.utils.data.Subset(trainset,idx)
-    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, **kwargs)
+
+    synth_images = torch.load("./synth_images_12k.pt")
+    synth_labels = torch.load("./synth_labels_12k.pt")
+    
+    synth_dataset = torch.utils.data.TensorDataset(synth_images,synth_labels)
+
+    merged_dataset = torch.utils.data.ConcatDataset([trainset_part,synth_dataset])
+
+    train_loader = torch.utils.data.DataLoader(merged_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
     print(f"!!!EPS {args.eps_score} is applied!!!")
     num_data = len(idx)
 else:
